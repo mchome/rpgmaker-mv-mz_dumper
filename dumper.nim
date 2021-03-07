@@ -16,7 +16,7 @@ const pngHeader: array[16, uint8] = createPngHeader()
 
 
 proc getCode(path: string): seq[uint8] =
-  if fileExtensions[path.splitFile.ext] == ".png":
+  if fileExtensions.hasKey(path.splitFile.ext) and fileExtensions[path.splitFile.ext] == ".png":
     let fs = path.newFileStream(fmRead)
     defer: fs.close
     fs.setPosition(16)
@@ -26,7 +26,7 @@ proc getCode(path: string): seq[uint8] =
     try:
       let data = path.readFile
       let code = data[data.findAll("""['"]encryptionKey['"]\s?:\s?['"]([0-9a-fA-F]{32})\s?['"]""".re)[0].group(0)[0]]
-      code.findAll(".{2}".re).mapIt(code[it.boundaries].parseHexInt.uint8)
+      result = code.findAll(".{2}".re).mapIt(code[it.boundaries].parseHexInt.uint8)
     except:
       raise newException(Exception, "Unable to find code.")
 
@@ -69,11 +69,11 @@ when isMainModule:
       for file in path.walkDirRec:
         if fileExtensions.hasKey(file.splitFile.ext): files.add(file.absolutePath)
         elif file.splitFile.name & file.splitFile.ext == "System.json": code = file.absolutePath.getCode
-        if code.len == 0 and fileExtensions[path.splitFile.ext] == ".png": code = path.absolutePath.getCode
+        if code.len == 0 and fileExtensions.hasKey(file.splitFile.ext) and fileExtensions[file.splitFile.ext] == ".png": code = file.absolutePath.getCode
     elif path.fileExists:
       if fileExtensions.hasKey(path.splitFile.ext): files.add(path.absolutePath)
       elif path.splitFile.name & path.splitFile.ext == "System.json": code = path.absolutePath.getCode
-      if code.len == 0 and fileExtensions[path.splitFile.ext] == ".png": code = path.absolutePath.getCode
+      if code.len == 0 and fileExtensions.hasKey(path.splitFile.ext) and fileExtensions[path.splitFile.ext] == ".png": code = path.absolutePath.getCode
   if files.len == 0: quit()
   for f in files: echo f
 
